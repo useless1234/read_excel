@@ -11,10 +11,10 @@ module.exports = {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {
-      'upload_file':{
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      }
+      // 'upload_file':{
+      //   target: 'http://localhost:8080',
+      //   changeOrigin: true
+      // }
     },
 
     // Various Dev Server settings

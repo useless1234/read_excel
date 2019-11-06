@@ -1,17 +1,24 @@
 <template>
-  <el-upload
-    class="upload-demo"
-    ref="upload"
-    action="123"
-    :before-upload="beforeUpload"
-    :on-preview="handlePreview"
-    :on-remove="handleRemove"
-    :file-list="fileList"
-    :auto-upload="false">
-    <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
-    <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器</el-button>
-    <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
-  </el-upload>
+  <div>
+	  <el-upload drag
+	       :limit=limitNum
+	       :auto-upload="false"
+	       accept=".xlsx"
+	       :action="UploadUrl()"
+	       :before-upload="beforeUploadFile"
+	       :on-change="fileChange"
+	       :on-exceed="exceedFile"
+	       :on-success="handleSuccess"
+	       :on-error="handleError"
+	       :file-list="fileList">
+	    <i class="el-icon-upload"></i>
+	    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+	    <div class="el-upload__tip" slot="tip">只能上传xlsx文件，且不超过10M</div>
+  	</el-upload>
+    <br/>
+    <el-button size="small" type="primary" @click="uploadFile">立即上传</el-button>
+    <el-button size="small">取消</el-button>
+  </div>
 </template>
 
 <script>
@@ -19,28 +26,99 @@
     name: "uploadExcel",
     data() {
       return {
-        fileList: []
-      };
+        limitNum: 1,  // 上传excel时，同时允许上传的最大数
+        fileList: [],   // excel文件列表
+      }
     },
     methods:{
-      submitUpload() {
-        this.$refs.upload.submit();
+      // 文件超出个数限制时的钩子
+      exceedFile(files, fileList) {
+        this.$message.warning(`只能选择 ${this.limitNum} 个文件，当前共选择了 ${files.length + fileList.length} 个`);
       },
-      handleRemove(file, fileList) {
-        console.log(file, fileList);
+      // 文件状态改变时的钩子
+      fileChange(file, fileList) {
+        console.log(file.raw);
+        this.fileList.push(file.raw) ;
+        console.log(this.fileList);
       },
-      handlePreview(file) {
+      // 上传文件之前的钩子, 参数为上传的文件,若返回 false 或者返回 Promise 且被 reject，则停止上传
+      beforeUploadFile(file) {
+        console.log('before upload');
         console.log(file);
+        let extension = file.name.substring(file.name.lastIndexOf('.')+1);
+        let size = file.size / 1024 / 1024;
+        if(extension !== 'xlsx') {
+          this.$message.warning('只能上传后缀是.xlsx的文件');
+        }
+        if(size > 10) {
+          this.$message.warning('文件大小不得超过10M');
+        }
       },
-      beforeUpload(file){
-        console.log(file);
-        let fd = new FormData();
-        fd.append("file", file);
-        this.$axios.post('upload_file', fd).then(res => {
-            console.log('success')
-        })
+      // 文件上传成功时的钩子
+      handleSuccess(res, file, fileList) {
+        this.$message.success('文件上传成功');
+      },
+      // 文件上传失败时的钩子
+      handleError(err, file, fileList) {
+        this.$message.error('文件上传失败');
+      },
+      UploadUrl:function(){
+       // 因为action参数是必填项，我们使用二次确认进行文件上传时，直接填上传文件的url会因为没有参数导致api报404，所以这里将action设置为一个返回为空的方法就行，避免抛错
+        return ""
+      },
+      uploadFile() {
+        if (this.fileList.length === 0){
+          this.$message.warning('请上传文件');
+        } else {
+          this.$axios.get("api/first")
+          console.log(111)
+          sleep(4000);
+          console.log(222)
+          var DjangoCookie=getCookie('csrftoken');
+          let form = new FormData();
+          form.append('file', this.fileList);
+          console.log(333)
+          this.$axios({
+            method: "post",
+            url: "api/first",
+            headers:{
+              // 'Content-type': 'multipart/form-data'
+              'X-CSRFToken': DjangoCookie
+            },
+            data: {
+              firstName: 'Fred',
+              lastName: 'Flintstone'
+            }
+          }).then(res=>{
+              console.log("res")
+            },err =>{
+              console.log("err")
+            });
+        }
       }
     }
+  }
+  function getCookie(name){  //获取cookie函数
+      name = name + "=";
+      var start = document.cookie.indexOf(name),
+          value = null;
+      if(start>-1){
+          var end = document.cookie.indexOf(";",start);
+          if(end == -1){
+              end = document.cookie.length;
+          }
+          value = document.cookie.substring(start+name.length,end);
+      }
+      return value;
+  }
+  function sleep(numberMillis) {   //等待函数
+      var now = new Date();
+      var exitTime = now.getTime() + numberMillis;
+      while (true) {
+          now = new Date();
+          if (now.getTime() > exitTime)
+              return;
+      }
   }
 </script>
 
